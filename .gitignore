@@ -1,0 +1,25 @@
+## .NET / Blazor
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.swp
+
+## Build outputs
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+out/
+publish/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## Logs
+*.log
