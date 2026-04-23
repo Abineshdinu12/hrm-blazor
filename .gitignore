@@ -12,8 +12,6 @@ obj/
 [Rr]elease/
 [Bb]in/
 [Oo]bj/
-out/
-publish/
 
 ## NuGet
 *.nupkg
@@ -23,3 +21,7 @@ packages/
 
 ## Logs
 *.log
+
+## Keep dist/wwwroot (pre-built output for Netlify)
+!dist/
+
