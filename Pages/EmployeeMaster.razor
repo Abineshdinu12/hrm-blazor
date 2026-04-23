@@ -1,0 +1,203 @@
+@page "/employee-master"
+@inject IEmployeeApiService Api
+@inject AppState AppState
+@inject NavigationManager Nav
+@implements IDisposable
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h2>Employee Master</h2>
+        <p>Manage and view all employee records</p>
+    </div>
+    <div class="page-header-right">
+        <button class="btn btn-outlined" @onclick="LoadEmployees" disabled="@AppState.Loading">
+            ↺ Refresh
+        </button>
+        <button class="btn btn-primary" @onclick="HandleAddNew">
+            + Add New Employee
+        </button>
+    </div>
+</div>
+
+<!-- Error Banner -->
+@if (!string.IsNullOrEmpty(AppState.Error))
+{
+    <div class="alert alert-error">
+        <span>⚠</span>
+        <span>@AppState.Error</span>
+        <button class="alert-close" @onclick="AppState.DismissError">✕</button>
+    </div>
+}
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <input class="form-input" placeholder="🔍  Search by Name or Designation" @bind="_search" @bind:event="oninput" />
+    <select class="form-select" style="min-width:160px;" @bind="_roleFilter">
+        <option value="">All Designations</option>
+        @foreach (var r in UniqueRoles)
+        {
+            <option value="@r">@r</option>
+        }
+    </select>
+    <select class="form-select" style="min-width:140px;" @bind="_genderFilter">
+        <option value="">All Genders</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+    </select>
+</div>
+
+<!-- Table -->
+<div class="emp-table-wrap" style="position:relative;">
+    @if (AppState.Loading)
+    {
+        <div class="spinner-overlay">
+            <div class="spinner"></div>
+        </div>
+    }
+
+    @if (!AppState.Loading && !FilteredEmployees.Any())
+    {
+        <div class="empty-state">No employees found.</div>
+    }
+    else
+    {
+        <table class="emp-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Employee Name</th>
+                    <th>Alias</th>
+                    <th>Designation</th>
+                    <th>Gender</th>
+                    <th>Marital Status</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in FilteredEmployees)
+                {
+                    <tr>
+                        <td>@emp.Id</td>
+                        <td><strong>@emp.EmpName</strong></td>
+                        <td>@emp.AliasName</td>
+                        <td>@emp.Designation</td>
+                        <td>@emp.Gender</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(emp.MaritalStatus))
+                            {
+                                <span class="chip chip-purple">@emp.MaritalStatus</span>
+                            }
+                            else
+                            {
+                                <span style="color:var(--text-muted);">—</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="table-actions" style="justify-content:center;">
+                                <button class="btn-icon view" @onclick="() => HandleView(emp)" title="View">👁</button>
+                                <button class="btn-icon edit" @onclick="() => HandleEdit(emp)" title="Edit">✎</button>
+                                <button class="btn-icon delete" @onclick="() => HandleDeleteClick(emp.Id)" title="Delete">🗑</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- Delete Confirm Dialog -->
+<ConfirmDialog IsVisible="_deleteDialogOpen"
+               Title="Confirm Deletion"
+               Message="Are you sure you want to permanently delete this employee and all associated records? This action cannot be undone."
+               ConfirmText="Delete"
+               CancelText="Cancel"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
+@code {
+    private string _search = "";
+    private string _roleFilter = "";
+    private string _genderFilter = "";
+    private bool _deleteDialogOpen;
+    private int? _employeeToDelete;
+
+    private IEnumerable<string> UniqueRoles =>
+        AppState.Employees.Select(e => e.Designation).Where(d => !string.IsNullOrEmpty(d)).Distinct();
+
+    private IEnumerable<Employee> FilteredEmployees =>
+        AppState.Employees.Where(e =>
+            (string.IsNullOrEmpty(_search) ||
+             (e.EmpName?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+             (e.Designation?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false)) &&
+            (string.IsNullOrEmpty(_roleFilter) || e.Designation == _roleFilter) &&
+            (string.IsNullOrEmpty(_genderFilter) || e.Gender == _genderFilter));
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.OnChange += StateHasChanged;
+        if (!AppState.Employees.Any())
+            await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        AppState.SetLoading(true);
+        AppState.SetError(null);
+        try
+        {
+            var list = await Api.GetAllAsync();
+            AppState.SetEmployees(list);
+        }
+        catch (Exception ex)
+        {
+            AppState.SetError($"Failed to load employees: {ex.Message}");
+        }
+        finally { AppState.SetLoading(false); }
+    }
+
+    private void HandleAddNew() =>
+        Nav.NavigateTo("/employee-master/form?mode=create");
+
+    private void HandleEdit(Employee emp) =>
+        Nav.NavigateTo($"/employee-master/form?mode=modify&id={emp.Id}");
+
+    private void HandleView(Employee emp) =>
+        Nav.NavigateTo($"/employee-master/form?mode=view&id={emp.Id}");
+
+    private void HandleDeleteClick(int id)
+    {
+        _employeeToDelete = id;
+        _deleteDialogOpen = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_employeeToDelete.HasValue)
+        {
+            AppState.SetLoading(true);
+            var ok = await Api.DeleteAllDataAsync(_employeeToDelete.Value);
+            AppState.SetLoading(false);
+            if (ok)
+            {
+                AppState.RemoveEmployee(_employeeToDelete.Value);
+            }
+            else
+            {
+                AppState.SetError("Failed to delete employee.");
+            }
+        }
+        _deleteDialogOpen = false;
+        _employeeToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        _deleteDialogOpen = false;
+        _employeeToDelete = null;
+    }
+
+    public void Dispose() => AppState.OnChange -= StateHasChanged;
+}

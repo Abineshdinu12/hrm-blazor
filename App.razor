@@ -1,0 +1,23 @@
+@inject AppState AppState
+@inject NavigationManager Nav
+
+<Router AppAssembly="typeof(App).Assembly">
+    <Found Context="routeData">
+        @if (AppState.IsAuthenticated || routeData.PageType == typeof(IstreamBlazor.Pages.Login))
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        }
+        else
+        {
+            <LayoutView Layout="typeof(Layout.EmptyLayout)">
+                <IstreamBlazor.Pages.Login />
+            </LayoutView>
+        }
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(Layout.EmptyLayout)">
+            <p class="text-muted">Page not found.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

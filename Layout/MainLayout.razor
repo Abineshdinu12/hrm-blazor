@@ -1,0 +1,13 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <Sidebar />
+    <div class="main-area">
+        <TopBar />
+        <div class="page-content">
+            @Body
+        </div>
+    </div>
+</div>
+
+<Snackbar />

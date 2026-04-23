@@ -1,0 +1,84 @@
+@inject AppState AppState
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="sidebar @(AppState.SidebarOpen ? "" : "collapsed")">
+
+    <!-- Logo -->
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">iS</div>
+        @if (AppState.SidebarOpen)
+        {
+            <div class="sidebar-logo-text">
+                <div class="sidebar-logo-name">iStreams</div>
+                <div class="sidebar-logo-sub">ERP Solutions</div>
+            </div>
+        }
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+        @if (AppState.SidebarOpen)
+        {
+            <div class="nav-group-label">Human Resources</div>
+        }
+
+        <!-- Employee Management group -->
+        <button class="nav-item parent" @onclick="ToggleEmpGroup" title="Employee Management">
+            <span class="nav-icon">&#128100;</span>
+            @if (AppState.SidebarOpen)
+            {
+                <span class="nav-label">Employee Management</span>
+                <span class="nav-arrow">@(empGroupOpen ? "▲" : "▼")</span>
+            }
+        </button>
+
+        <div class="nav-children @(empGroupOpen && AppState.SidebarOpen ? "open" : "closed")">
+            <button class="nav-item @(IsActive("/employee-master") ? "active" : "")"
+                    @onclick='() => Navigate("/employee-master")'
+                    title="Employee Master List">
+                <span class="nav-icon">&#9783;</span>
+                <span class="nav-label">Employee Master List</span>
+            </button>
+        </div>
+
+        @if (!AppState.SidebarOpen)
+        {
+            <!-- Collapsed: show child icons directly -->
+            <button class="nav-item @(IsActive("/employee-master") ? "active" : "")"
+                    @onclick='() => Navigate("/employee-master")'
+                    title="Employee Master List">
+                <span class="nav-icon">&#9783;</span>
+            </button>
+        }
+    </nav>
+
+    <!-- Footer -->
+    @if (AppState.SidebarOpen)
+    {
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-text">iStreams &copy; 2026 v1.0.0</div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool empGroupOpen = true;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void ToggleEmpGroup() => empGroupOpen = !empGroupOpen;
+
+    private void Navigate(string path)
+    {
+        Nav.NavigateTo(path);
+        if (!AppState.SidebarOpen) AppState.SetSidebar(false);
+    }
+
+    private bool IsActive(string path) => Nav.Uri.EndsWith(path, StringComparison.OrdinalIgnoreCase);
+
+    public void Dispose() => AppState.OnChange -= StateHasChanged;
+}

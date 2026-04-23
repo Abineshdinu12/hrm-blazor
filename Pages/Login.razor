@@ -1,0 +1,149 @@
+@page "/login"
+@page "/"
+@layout EmptyLayout
+@inject AppState AppState
+@inject NavigationManager Nav
+
+<div class="login-shell">
+    <!-- LEFT PANEL -->
+    <div class="login-left">
+        <div class="login-blob" style="width:420px;height:420px;background:radial-gradient(circle,rgba(142,124,255,0.35) 0%,transparent 70%);top:-80px;right:-100px;"></div>
+        <div class="login-blob" style="width:300px;height:300px;background:radial-gradient(circle,rgba(108,99,255,0.4) 0%,transparent 70%);bottom:-60px;left:-80px;"></div>
+        <div class="login-left-content">
+            <div class="login-logo-big">
+                <span style="font-weight:900;font-size:1.8rem;color:white;">iS</span>
+            </div>
+            <div class="login-title">iStreams<br />ERP Solutions</div>
+            <div class="login-desc">Your complete enterprise ERP and employee management platform. Streamline operations with intelligent workflows.</div>
+            <div>
+                @foreach (var feat in new[] { "Employee Management", "Payroll Processing", "HR Analytics" })
+                {
+                    <div class="feature-pill">
+                        <span class="feature-pill-dot"></span>
+                        <span>@feat</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="login-right">
+        <div class="login-form-wrap">
+            <div class="form-title">Welcome back 👋</div>
+            <div class="form-subtitle">Sign in to your iStreams account</div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-error">
+                    <span>⚠</span>
+                    <span>@_error</span>
+                    <button class="alert-close" @onclick='() => _error = ""'>✕</button>
+                </div>
+            }
+
+            <EditForm Model="_model" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
+
+                <!-- Email -->
+                <div class="field-group">
+                    <label class="field-label required">Email Address</label>
+                    <div class="input-icon-wrap">
+                        <span class="icon-prefix">✉</span>
+                        <input class="form-input @(_emailErr ? "error" : "")"
+                               type="email"
+                               placeholder="admin@istreams.com"
+                               @bind="_email"
+                               @bind:event="oninput" />
+                    </div>
+                    @if (_emailErr) { <div class="field-error">Enter a valid email address</div> }
+                </div>
+
+                <!-- Password -->
+                <div class="field-group">
+                    <label class="field-label required">Password</label>
+                    <div class="input-icon-wrap" style="position:relative;">
+                        <span class="icon-prefix">🔒</span>
+                        <input class="form-input @(_passErr ? "error" : "")"
+                               type="@(_showPass ? "text" : "password")"
+                               placeholder="••••••••"
+                               @bind="_password"
+                               @bind:event="oninput"
+                               style="padding-right:44px;" />
+                        <button type="button" class="password-toggle" @onclick='() => _showPass = !_showPass'>
+                            @(_showPass ? "🙈" : "👁")
+                        </button>
+                    </div>
+                    @if (_passErr) { <div class="field-error">Password must be at least 6 characters</div> }
+                </div>
+
+                <!-- Remember + Forgot -->
+                <div class="flex justify-between items-center mb-16">
+                    <label class="checkbox-card @(_rememberMe ? "checked" : "")">
+                        <input type="checkbox" @bind="_rememberMe" />
+                        <span class="cb-label">Remember me</span>
+                    </label>
+                    <a href="#" style="font-size:0.82rem;color:var(--primary);font-weight:500;">Forgot password?</a>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn btn-primary w-full" style="padding:12px;font-size:0.95rem;justify-content:center;" disabled="@_loading">
+                    @if (_loading)
+                    {
+                        <span class="spinner" style="width:20px;height:20px;border-width:2px;"></span>
+                    }
+                    else
+                    {
+                        <span>Sign In</span>
+                        <span>→</span>
+                    }
+                </button>
+            </EditForm>
+
+            <div class="demo-hint" style="margin-top:20px;">
+                Demo: <strong>admin@istreams.com</strong> / <strong>Admin@123</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _error = "";
+    private bool _loading;
+    private bool _showPass;
+    private bool _rememberMe;
+    private bool _emailErr;
+    private bool _passErr;
+    private object _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (AppState.IsAuthenticated)
+            Nav.NavigateTo("/employee-master");
+    }
+
+    private async Task HandleLogin()
+    {
+        _emailErr = string.IsNullOrWhiteSpace(_email) || !_email.Contains('@');
+        _passErr = string.IsNullOrWhiteSpace(_password) || _password.Length < 6;
+        if (_emailErr || _passErr) return;
+
+        _loading = true;
+        _error = "";
+        await Task.Delay(1100); // simulate network
+
+        if (_email == "admin@istreams.com" && _password == "Admin@123")
+        {
+            AppState.Login("Admin User", _email);
+            Nav.NavigateTo("/employee-master");
+        }
+        else
+        {
+            _error = "Invalid email or password. Try admin@istreams.com / Admin@123";
+        }
+
+        _loading = false;
+    }
+}

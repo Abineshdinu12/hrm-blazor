@@ -1,0 +1,48 @@
+@inject AppState AppState
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="topbar">
+    <button class="topbar-hamburger" @onclick="AppState.ToggleSidebar" title="Toggle Sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+    </button>
+
+    <div class="topbar-title">@GetPageTitle()</div>
+
+    <div class="topbar-user">
+        <div>
+            <div class="topbar-user-name">@AppState.UserName</div>
+            <div class="topbar-user-role">Administrator</div>
+        </div>
+        <div class="topbar-avatar" title="@AppState.UserEmail">
+            @GetInitials()
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized() => AppState.OnChange += StateHasChanged;
+
+    private string GetPageTitle()
+    {
+        var uri = Nav.Uri;
+        if (uri.Contains("employee-master/form")) return "Employee Master — Form";
+        if (uri.Contains("employee-master")) return "Employee Master";
+        return "iStreams ERP";
+    }
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrEmpty(AppState.UserName)) return "A";
+        var parts = AppState.UserName.Split(' ');
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : AppState.UserName[0].ToString().ToUpper();
+    }
+
+    public void Dispose() => AppState.OnChange -= StateHasChanged;
+}

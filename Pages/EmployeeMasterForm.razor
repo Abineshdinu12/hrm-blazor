@@ -1,0 +1,325 @@
+@page "/employee-master/form"
+
+<!-- Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h2>Employee Master</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <span class="chip" style="background:@(ModeColor)18;color:@ModeColor;">@ModeLabel</span>
+            <span class="text-sm text-muted">Manage employee information and records</span>
+        </div>
+    </div>
+    <div class="page-header-right">
+        @if (_loading) { <div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> }
+        @if (!_isView)
+        {
+            <button class="btn btn-outlined" @onclick='() => { _empName="";_aliasName="";_designation="";_gender="";_dob="";_religion="";_maritalStatus=""; }' disabled="@_loading">↺ Reset</button>
+        }
+        <button class="btn btn-danger" @onclick="GoBack">✕ Cancel</button>
+        @if (!_isView)
+        {
+            <button class="btn btn-primary" @onclick="@(_activeTab < 3 ? HandleSaveAndNext : HandleFinalSave)" disabled="@_loading">
+                💾 @(_activeTab < 3 ? "Save & Next" : "Save Employee")
+            </button>
+        }
+        @if (_isView && _activeTab < 3)
+        {
+            <button class="btn btn-outlined" @onclick="HandleSaveAndNext">Next →</button>
+        }
+    </div>
+</div>
+
+<!-- Alerts -->
+@if (!string.IsNullOrEmpty(_errorMsg))
+{
+    <div class="alert alert-error"><span>⚠</span><span>@_errorMsg</span><button class="alert-close" @onclick='() => _errorMsg = ""'>✕</button></div>
+}
+@if (!string.IsNullOrEmpty(_successMsg))
+{
+    <div class="alert alert-success"><span>✓</span><span>@_successMsg</span><button class="alert-close" @onclick='() => _successMsg = ""'>✕</button></div>
+}
+
+<!-- Tabs -->
+<div class="tabs-bar">
+    @foreach (var (label, icon, idx) in new[] { ("Personal Details","👤",0),("Employee Details","💼",1),("Salary & Benefits","💰",2),("Payroll & Other","🏦",3) })
+    {
+        <button class="tab-btn @(_activeTab == idx ? "active" : "")" @onclick="() => SetTab(idx)">
+            <span class="tab-icon">@icon</span>@label
+        </button>
+    }
+</div>
+
+<!-- ═══ TAB 0: Personal Details ═══ -->
+@if (_activeTab == 0)
+{
+    <SectionCard Title="Personal Details"><Icon>👤</Icon>
+        <ChildContent>
+            <div class="grid grid-3">
+                <div class="field-group">
+                    <label class="field-label required">Employee Name</label>
+                    <input class="form-input" disabled="@_isView" @bind="_empName" placeholder="Full name" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Alias Name</label>
+                    <input class="form-input" disabled="@_isView" @bind="_aliasName" placeholder="Alias" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Designation</label>
+                    <input class="form-input" disabled="@_isView" @bind="_designation" placeholder="Job title" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Gender</label>
+                    <select class="form-select" disabled="@_isView" @bind="_gender">
+                        <option value="">Select Gender</option>
+                        <option>Male</option><option>Female</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Date of Birth</label>
+                    <input class="form-input" type="date" disabled="@_isView" value="@_dob" @onchange="e => _dob = e.Value?.ToString() ?? string.Empty" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Religion</label>
+                    <select class="form-select" disabled="@_isView" @bind="_religion">
+                        <option value="">Select Religion</option>
+                        <option>Islam</option><option>Christianity</option><option>Hinduism</option><option>Buddhism</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Marital Status</label>
+                    <select class="form-select" disabled="@_isView" @bind="_maritalStatus">
+                        <option value="">Select Status</option>
+                        <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contacts -->
+            <div class="mb-16">
+                <div class="flex justify-between items-center mb-8">
+                    <strong class="text-sm">Contacts</strong>
+                    @if (!_isView) { <button class="btn btn-sm btn-outlined" @onclick="AddContact">+ Add Contact</button> }
+                </div>
+                @for (int i = 0; i < _contacts.Count; i++)
+                {
+                    var idx = i;
+                    <div class="sub-row">
+                        @if (!_isView && _contacts.Count > 1) { <button class="sub-row-remove" @onclick="() => RemoveContact(idx)">✕</button> }
+                        <div class="field-group"><label class="field-label">Type</label><input class="form-input" disabled="@_isView" @bind="_contacts[idx].Type" /></div>
+                        <div class="field-group"><label class="field-label">Mobile No</label><input class="form-input" disabled="@_isView" @bind="_contacts[idx].MobileNo" /></div>
+                        <div class="field-group"><label class="field-label">Telephone</label><input class="form-input" disabled="@_isView" @bind="_contacts[idx].TelephoneNo" /></div>
+                        <div class="field-group"><label class="field-label">Contact Person</label><input class="form-input" disabled="@_isView" @bind="_contacts[idx].ContactPerson" /></div>
+                        <div class="field-group" style="flex:2;min-width:200px;"><label class="field-label">Address</label><input class="form-input" disabled="@_isView" @bind="_contacts[idx].Address" /></div>
+                    </div>
+                }
+            </div>
+
+            <!-- Qualifications -->
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <strong class="text-sm">Qualifications</strong>
+                    @if (!_isView) { <button class="btn btn-sm btn-outlined" @onclick="AddQualification">+ Add Qualification</button> }
+                </div>
+                @for (int i = 0; i < _qualifications.Count; i++)
+                {
+                    var idx = i;
+                    <div class="sub-row">
+                        @if (!_isView && _qualifications.Count > 1) { <button class="sub-row-remove" @onclick="() => RemoveQualification(idx)">✕</button> }
+                        <div class="field-group" style="flex:1;min-width:160px;"><label class="field-label">Qualification</label><input class="form-input" disabled="@_isView" @bind="_qualifications[idx].Qualification" /></div>
+                        <div class="field-group" style="flex:1;min-width:160px;"><label class="field-label">Experience</label><input class="form-input" disabled="@_isView" @bind="_qualifications[idx].Experience" /></div>
+                        <div class="field-group" style="flex:1;min-width:180px;"><label class="field-label">Certificate Path</label><input class="form-input" disabled="@_isView" @bind="_qualifications[idx].CertificatePath" /></div>
+                    </div>
+                }
+            </div>
+        </ChildContent>
+    </SectionCard>
+}
+
+<!-- ═══ TAB 1: Employee Details ═══ -->
+@if (_activeTab == 1)
+{
+    <SectionCard Title="Employee Details"><Icon>💼</Icon>
+        <ChildContent>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Date of Join</label><input class="form-input" type="date" disabled="@_isView" value="@_dateOfJoin" @onchange="e => _dateOfJoin = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Contract Start Date</label><input class="form-input" type="date" disabled="@_isView" value="@_contractStart" @onchange="e => _contractStart = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Date of Leaving</label><input class="form-input" type="date" disabled="@_isView" value="@_dateOfLeaving" @onchange="e => _dateOfLeaving = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Visa Category</label>
+                    <select class="form-select" disabled="@_isView" @bind="_visaCategory">
+                        <option value="">Select</option><option>Work Visa</option><option>Business Visa</option><option>Dependent Visa</option><option>Tourist Visa</option><option>Residence Visa</option>
+                    </select>
+                </div>
+                <div class="field-group"><label class="field-label">Notice Period (Days)</label><input class="form-input" type="number" disabled="@_isView" @bind="_noticePeriod" /></div>
+            </div>
+
+            <div class="divider-label"><span>Organisation</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Company</label>
+                    <select class="form-select" disabled="@_isView" @bind="_company"><option value="">Select</option><option>iStreams Technologies</option><option>iStreams Gulf</option><option>iStreams India</option><option>iStreams USA</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Branch</label>
+                    <select class="form-select" disabled="@_isView" @bind="_branch"><option value="">Select</option><option>Head Office</option><option>Manama Branch</option><option>Riffa Branch</option><option>Muharraq Branch</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Division</label><input class="form-input" disabled="@_isView" @bind="_division" /></div>
+                <div class="field-group"><label class="field-label">Department</label>
+                    <select class="form-select" disabled="@_isView" @bind="_department"><option value="">Select</option><option>HR</option><option>Finance</option><option>IT</option><option>Operations</option><option>Sales</option><option>Marketing</option><option>Legal</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Section</label><input class="form-input" disabled="@_isView" @bind="_section" /></div>
+                <div class="field-group"><label class="field-label">Work Category</label><input class="form-input" disabled="@_isView" @bind="_workCategory" /></div>
+            </div>
+
+            <div class="divider-label"><span>CPR / Identification</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">CPR No</label><input class="form-input" disabled="@_isView" @bind="_cprNo" /></div>
+                <div class="field-group"><label class="field-label">CPR Expiry</label><input class="form-input" type="date" disabled="@_isView" value="@_cprExpiry" @onchange="e => _cprExpiry = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Designation As Per ID</label><input class="form-input" disabled="@_isView" @bind="_designationAsPerId" /></div>
+            </div>
+
+            <div class="divider-label"><span>Passport</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Nationality</label><input class="form-input" disabled="@_isView" @bind="_nationality" /></div>
+                <div class="field-group"><label class="field-label">Passport No</label><input class="form-input" disabled="@_isView" @bind="_passportNo" /></div>
+                <div class="field-group"><label class="field-label">Name on Passport</label><input class="form-input" disabled="@_isView" @bind="_passportName" /></div>
+                <div class="field-group"><label class="field-label">Passport Expiry</label><input class="form-input" type="date" disabled="@_isView" value="@_passportExpiry" @onchange="e => _passportExpiry = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Issued Place</label><input class="form-input" disabled="@_isView" @bind="_issuedPlace" /></div>
+            </div>
+
+            <div class="divider-label"><span>Residence Permit (RP)</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">RP Sponsor</label><input class="form-input" disabled="@_isView" @bind="_rpSponsor" /></div>
+                <div class="field-group"><label class="field-label">RP No</label><input class="form-input" disabled="@_isView" @bind="_rpNo" /></div>
+                <div class="field-group"><label class="field-label">RP Expiry</label><input class="form-input" type="date" disabled="@_isView" value="@_rpExpiry" @onchange="e => _rpExpiry = e.Value?.ToString() ?? string.Empty" /></div>
+            </div>
+
+            <div class="divider-label"><span>GOSI &amp; Vacation</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">GOSI No</label><input class="form-input" disabled="@_isView" @bind="_gosiNo" /></div>
+                <div class="field-group"><label class="field-label">GOSI Salary</label><input class="form-input" type="number" disabled="@_isView" @bind="_gosiSalary" /></div>
+                <div class="field-group"><label class="field-label">Last Vacation Date</label><input class="form-input" type="date" disabled="@_isView" value="@_lastVacationDate" @onchange="e => _lastVacationDate = e.Value?.ToString() ?? string.Empty" /></div>
+                <div class="field-group"><label class="field-label">Vacation Rejoined Date</label><input class="form-input" type="date" disabled="@_isView" value="@_vacationRejoinedDate" @onchange="e => _vacationRejoinedDate = e.Value?.ToString() ?? string.Empty" /></div>
+            </div>
+        </ChildContent>
+    </SectionCard>
+}
+
+<!-- ═══ TAB 2: Salary & Benefits ═══ -->
+@if (_activeTab == 2)
+{
+    <SectionCard Title="Salary &amp; Benefits"><Icon>💰</Icon>
+        <ChildContent>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Grade</label><input class="form-input" disabled="@_isView" @bind="_grade" /></div>
+                <div class="field-group"><label class="field-label">Grade Level</label><input class="form-input" disabled="@_isView" @bind="_gradeLevel" /></div>
+                <div class="field-group"><label class="field-label">Salary Type</label>
+                    <select class="form-select" disabled="@_isView" @bind="_salaryType"><option value="">Select</option><option>Monthly</option><option>Daily</option><option>Hourly</option><option>Contract</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Basic Salary</label>
+                    <div class="input-prefix"><span class="prefix-label">BHD</span><input class="form-input" type="number" disabled="@_isView" @bind="_basicSalary" /></div>
+                </div>
+                <div class="field-group"><label class="field-label">Supplier</label><input class="form-input" disabled="@_isView" @bind="_supplier" /></div>
+                <div class="field-group"><label class="field-label">Commission</label><input class="form-input" type="number" disabled="@_isView" @bind="_commission" /></div>
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;">
+                <label class="checkbox-card @(_isOtEligible ? "checked" : "")">
+                    <input type="checkbox" disabled="@_isView" @bind="_isOtEligible" /><span class="cb-label">Overtime Eligible</span>
+                </label>
+                <label class="checkbox-card @(_useFixedOt ? "checked" : "")">
+                    <input type="checkbox" disabled="@_isView" @bind="_useFixedOt" /><span class="cb-label">Fixed OT Rate</span>
+                </label>
+            </div>
+
+            @if (_isOtEligible)
+            {
+                <div class="field-group" style="max-width:220px;">
+                    <label class="field-label">Overtime Rate (BHD)</label>
+                    <input class="form-input" type="number" disabled="@_isView" @bind="_otRate" />
+                </div>
+            }
+
+            <div class="divider-label"><span>Allowances</span></div>
+            <table class="allowance-table">
+                <thead><tr><th>Allowance Name</th><th>Amount (BHD)</th>@if (!_isView){ <th></th> }</tr></thead>
+                <tbody>
+                    @for (int i = 0; i < _allowances.Count; i++)
+                    {
+                        var idx = i;
+                        <tr>
+                            <td><input class="form-input" disabled="@_isView" @bind="_allowances[idx].AllowanceName" /></td>
+                            <td><input class="form-input" type="number" disabled="@_isView" @bind="_allowances[idx].Value" /></td>
+                            @if (!_isView) { <td><button class="btn-icon delete" @onclick="() => RemoveAllowance(idx)">🗑</button></td> }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!_isView) { <button class="btn btn-sm btn-outlined mt-8" @onclick="AddAllowance">+ Add Allowance</button> }
+
+            <div class="gross-bar">
+                <span class="gross-label">Gross Salary</span>
+                <span class="gross-value">BHD @GrossSalary.ToString("F2")</span>
+            </div>
+        </ChildContent>
+    </SectionCard>
+}
+
+<!-- ═══ TAB 3: Payroll & Other ═══ -->
+@if (_activeTab == 3)
+{
+    <SectionCard Title="Payroll &amp; Other"><Icon>🏦</Icon>
+        <ChildContent>
+            <div class="divider-label"><span>Payroll Flags</span></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                @foreach (var (label, getter, setter) in PayrollFlags())
+                {
+                    <label class="checkbox-card @(getter() ? "checked" : "")">
+                        <input type="checkbox" disabled="@_isView" checked="@getter()" @onchange="e => setter((bool)e.Value!)" /><span class="cb-label">@label</span>
+                    </label>
+                }
+            </div>
+
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Work Shift</label>
+                    <select class="form-select" disabled="@_isView" @bind="_workShift"><option value="">Select</option><option>Morning</option><option>Evening</option><option>Night</option><option>General</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Mode of Payment</label>
+                    <select class="form-select" disabled="@_isView" @bind="_modeOfPayment"><option value="">Select</option><option>Cash</option><option>Bank Transfer</option><option>WPS</option><option>Cheque</option></select>
+                </div>
+                <div class="field-group"><label class="field-label">Salary Currency</label><input class="form-input" disabled="@_isView" @bind="_salaryCurrency" /></div>
+                <div class="field-group"><label class="field-label">Exchange Rate</label><input class="form-input" type="number" disabled="@_isView" @bind="_exchangeRate" /></div>
+            </div>
+
+            @if (ShowBankFields)
+            {
+                <div class="grid grid-2">
+                    <div class="field-group"><label class="field-label">Bank Account No</label><input class="form-input" disabled="@_isView" @bind="_bankACNo" /></div>
+                    <div class="field-group"><label class="field-label">Bank</label><input class="form-input" disabled="@_isView" @bind="_bank" /></div>
+                </div>
+            }
+
+            <div class="divider-label"><span>Air Ticket</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Destination Country</label><input class="form-input" disabled="@_isView" @bind="_destCountry" /></div>
+                <div class="field-group"><label class="field-label">Airport</label><input class="form-input" disabled="@_isView" @bind="_airport" /></div>
+                <div class="field-group"><label class="field-label">Estimated Airfare (BHD)</label><input class="form-input" type="number" disabled="@_isView" @bind="_estAirfare" /></div>
+                <div class="field-group"><label class="field-label">Airfare Frequency (Months)</label><input class="form-input" type="number" disabled="@_isView" @bind="_airfareFreq" /></div>
+            </div>
+
+            <div class="divider-label"><span>Categories &amp; Other</span></div>
+            <div class="grid grid-3">
+                <div class="field-group"><label class="field-label">Default Operation</label><input class="form-input" disabled="@_isView" @bind="_defaultOp" /></div>
+                <div class="field-group"><label class="field-label">Default Cost Head</label><input class="form-input" disabled="@_isView" @bind="_defaultCost" /></div>
+                <div class="field-group"><label class="field-label">File Reference</label><input class="form-input" disabled="@_isView" @bind="_fileRef" /></div>
+                <div class="field-group"><label class="field-label">Labour Camp</label><input class="form-input" disabled="@_isView" @bind="_labourCamp" /></div>
+                <div class="field-group"><label class="field-label">Manpower Category</label><input class="form-input" disabled="@_isView" @bind="_manpowerCat" /></div>
+                <div class="field-group"><label class="field-label">Payroll Category</label><input class="form-input" disabled="@_isView" @bind="_payrollCat" /></div>
+                <div class="field-group"><label class="field-label">Accruals Category</label><input class="form-input" disabled="@_isView" @bind="_accrualsCat" /></div>
+                <div class="field-group"><label class="field-label">Other Category</label><input class="form-input" disabled="@_isView" @bind="_otherCat" /></div>
+            </div>
+            <div style="margin-top:12px;">
+                <label class="checkbox-card @(_isAccommodated ? "checked" : "")">
+                    <input type="checkbox" disabled="@_isView" @bind="_isAccommodated" /><span class="cb-label">Is Accommodated</span>
+                </label>
+            </div>
+        </ChildContent>
+    </SectionCard>
+}

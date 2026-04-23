@@ -1,0 +1,10 @@
+@page "/home"
+@page "/counter"
+@page "/weather"
+
+<p>Redirecting...</p>
+
+@code {
+    [Inject] NavigationManager Nav { get; set; } = default!;
+    protected override void OnInitialized() => Nav.NavigateTo("/employee-master");
+}

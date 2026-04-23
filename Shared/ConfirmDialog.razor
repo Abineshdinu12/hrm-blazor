@@ -1,0 +1,25 @@
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="HandleBackdropClick">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-title">@Title</div>
+            <div class="modal-body">@Message</div>
+            <div class="modal-actions">
+                <button class="btn btn-outlined" @onclick="OnCancel">@CancelText</button>
+                <button class="btn btn-danger-solid" @onclick="OnConfirm">@ConfirmText</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirm";
+    [Parameter] public string Message { get; set; } = "Are you sure?";
+    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleBackdropClick() => await OnCancel.InvokeAsync();
+}

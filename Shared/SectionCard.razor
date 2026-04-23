@@ -1,0 +1,15 @@
+<div class="section-card">
+    <div class="section-card-header">
+        <div class="section-card-icon">@Icon</div>
+        <div class="section-card-title">@Title</div>
+    </div>
+    <div class="section-card-body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

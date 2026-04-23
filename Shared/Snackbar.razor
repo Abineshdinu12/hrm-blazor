@@ -1,0 +1,57 @@
+@inject AppState AppState
+@implements IDisposable
+
+<div class="snackbar-wrap">
+    @foreach (var toast in _toasts)
+    {
+        <div class="snackbar @(toast.IsError ? "snackbar-error" : "snackbar-success")">
+            <span>@(toast.IsError ? "✕" : "✓")</span>
+            <span>@toast.Message</span>
+            <button class="snackbar-close" @onclick="() => Remove(toast)">✕</button>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ToastItem> _toasts = new();
+    private record ToastItem(string Message, bool IsError)
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+    }
+
+    protected override void OnInitialized() => AppState.OnChange += HandleStateChange;
+
+    private string _lastError = string.Empty;
+
+    private void HandleStateChange()
+    {
+        if (AppState.Error != null && AppState.Error != _lastError)
+        {
+            _lastError = AppState.Error;
+            ShowToast(AppState.Error, true);
+        }
+        StateHasChanged();
+    }
+
+    public void ShowToast(string message, bool isError = false)
+    {
+        var item = new ToastItem(message, isError);
+        _toasts.Add(item);
+        StateHasChanged();
+        _ = AutoRemove(item);
+    }
+
+    private async Task AutoRemove(ToastItem item)
+    {
+        await Task.Delay(3500);
+        Remove(item);
+    }
+
+    private void Remove(ToastItem item)
+    {
+        _toasts.Remove(item);
+        StateHasChanged();
+    }
+
+    public void Dispose() => AppState.OnChange -= HandleStateChange;
+}
